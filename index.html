@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="theme-color" content="#000000">
+	<link rel="manifest" href="manifest.webmanifest">
+	<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+	<link rel="apple-touch-icon" href="assets/icon-180.png">
+	<title>Video Swiper</title>
+	<link rel="stylesheet" href="style.css">
+	<script src="script.ts" defer></script>
+</head>
+<body>
+	<div id="phone" class="phone">
+		<main id="feed" class="feed"></main>
+
+		<!-- Top bar -->
+		<header class="topbar">
+			<button class="mute-btn" id="muteBtn" aria-label="Toggle sound"></button>
+			<nav class="tabs" id="topTabs">
+				<button class="tab" data-tab="following">Following</button>
+				<button class="tab active" data-tab="foryou">For You</button>
+			</nav>
+			<button class="search-btn" id="searchBtn" aria-label="Search"></button>
+		</header>
+
+		<!-- Bottom nav -->
+		<nav class="bottomnav" id="bottomNav"></nav>
+
+		<!-- Comments sheet -->
+		<div class="sheet-backdrop" id="sheetBackdrop"></div>
+		<section class="sheet" id="commentsSheet" aria-hidden="true">
+			<header class="sheet-header">
+				<span class="sheet-title" id="sheetTitle">Comments</span>
+				<button class="sheet-close" id="sheetClose" aria-label="Close"></button>
+			</header>
+			<div class="sheet-list" id="sheetList"></div>
+			<footer class="sheet-input">
+				<div class="sheet-avatar"></div>
+				<input type="text" id="commentInput" placeholder="Add comment...">
+				<button class="send-btn" id="sendBtn" aria-label="Send"></button>
+			</footer>
+		</section>
+	</div>
+</body>
+</html>

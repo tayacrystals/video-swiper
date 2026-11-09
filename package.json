@@ -1,0 +1,17 @@
+{
+  "name": "video-swiper",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "jszip": "^3.10.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "scripts": {
+    "dev": "bun --hot server.ts",
+    "start": "bun server.ts",
+    "build": "bun build index.html --outdir dist && cp -r assets dist/ && cp seed.zip sw.js manifest.webmanifest dist/",
+    "seed": "bun make-seed.ts"
+  }
+}
