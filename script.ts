@@ -151,7 +151,11 @@ function render() {
 
 		<div class="rail">
 			<div class="avatar-wrap">
-				<div class="avatar" style="background:${grad}">${letter}</div>
+				<div class="avatar" style="background:${grad}">${
+					v.avatarURL || v.posterURL
+						? `<img src="${v.avatarURL || v.posterURL}" alt="">`
+						: letter
+				}</div>
 				<div class="follow">${ICONS.plus}</div>
 			</div>
 			<button class="action like">${ICONS.heart}<span>${fmt(v.likes)}</span></button>

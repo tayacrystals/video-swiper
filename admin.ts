@@ -106,6 +106,10 @@ export function openAdmin(onChange: () => void) {
 						<label>Bookmarks <input name="bookmarks" inputmode="numeric" value="${v.bookmarks}"></label>
 						<label>Shares <input name="shares" inputmode="numeric" value="${v.shares}"></label>
 					</div>
+					<div class="admin-file">
+						<button type="button" class="admin-btn" data-avatar-btn>Change avatar…</button>
+						<input type="file" accept="image/*" hidden data-avatar-input>
+					</div>
 					<button type="submit" class="admin-btn primary">Save</button>
 				</form>
 			</div>`
@@ -118,6 +122,11 @@ export function openAdmin(onChange: () => void) {
 					<button type="button" class="admin-btn" id="pickVideo">Choose video…</button>
 					<span id="pickName">no file selected</span>
 					<input type="file" id="videoFile" accept="video/*" hidden>
+				</div>
+				<div class="admin-file">
+					<button type="button" class="admin-btn" id="pickAvatar">Avatar…</button>
+					<span id="avatarName">optional</span>
+					<input type="file" id="avatarFile" accept="image/*" hidden>
 				</div>
 				<label>Author <input name="author" placeholder="@handle"></label>
 				<label>Caption <input name="caption" placeholder="Caption #hashtags"></label>
@@ -191,6 +200,17 @@ export function openAdmin(onChange: () => void) {
 				});
 			});
 
+			const avBtn = row.querySelector<HTMLButtonElement>("[data-avatar-btn]")!;
+			const avInput = row.querySelector<HTMLInputElement>("[data-avatar-input]")!;
+			avBtn.addEventListener("click", () => avInput.click());
+			avInput.addEventListener("change", async () => {
+				const f = avInput.files?.[0];
+				if (f) {
+					await data.setAvatar(id, f);
+					render();
+				}
+			});
+
 			row.querySelector<HTMLFormElement>(`.admin-edit[data-form]`)!.addEventListener(
 				"submit",
 				async e => {
@@ -216,6 +236,12 @@ export function openAdmin(onChange: () => void) {
 		const addBtn = el.querySelector<HTMLButtonElement>("#addBtn")!;
 		const status = el.querySelector("#adminStatus")!;
 		el.querySelector("#pickVideo")!.addEventListener("click", () => videoInput.click());
+		const avatarInput = el.querySelector<HTMLInputElement>("#avatarFile")!;
+		el.querySelector("#pickAvatar")!.addEventListener("click", () => avatarInput.click());
+		avatarInput.addEventListener("change", () => {
+			el.querySelector("#avatarName")!.textContent =
+				avatarInput.files?.[0]?.name ?? "optional";
+		});
 		videoInput.addEventListener("change", () => {
 			const f = videoInput.files?.[0];
 			pickName.textContent = f ? `${f.name} (${(f.size / 1e6).toFixed(1)} MB)` : "no file selected";
@@ -232,7 +258,7 @@ export function openAdmin(onChange: () => void) {
 			const fd = new FormData(form);
 			const author = String(fd.get("author") ?? "").trim();
 			const { blob: poster, duration } = await capturePoster(f);
-			await data.addVideo(f, poster, {
+			await data.addVideo(f, poster, avatarInput.files?.[0] ?? null, {
 				author: author ? (author.startsWith("@") ? author : "@" + author) : "@unknown",
 				name: author || "unknown",
 				caption: String(fd.get("caption") ?? ""),

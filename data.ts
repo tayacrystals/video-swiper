@@ -9,6 +9,7 @@ export interface VideoMeta {
 	id: string;
 	src: string; // logical path in exports, e.g. "videos/<id>.mp4"
 	poster: string | null;
+	avatar: string | null; // logical path in exports, e.g. "avatars/<id>.jpg"
 	author: string;
 	name: string;
 	caption: string;
@@ -25,11 +26,13 @@ export interface VideoMeta {
 export interface Playable extends VideoMeta {
 	srcURL: string;
 	posterURL: string;
+	avatarURL: string;
 }
 
 interface MediaRec {
 	video: Blob;
 	poster?: Blob;
+	avatar?: Blob;
 }
 
 /* ---------- IndexedDB ---------- */
@@ -72,12 +75,12 @@ const setFlag = (k: string, v: unknown) => req("config", "readwrite", s => s.put
 /* ---------- Object URLs ---------- */
 const urlCache = new Map<string, string>();
 
-async function mediaURL(id: string, kind: "video" | "poster"): Promise<string> {
+async function mediaURL(id: string, kind: "video" | "poster" | "avatar"): Promise<string> {
 	const key = id + ":" + kind;
 	const hit = urlCache.get(key);
 	if (hit) return hit;
 	const rec = await getMedia(id);
-	const blob = kind === "video" ? rec?.video : rec?.poster;
+	const blob = kind === "video" ? rec?.video : kind === "poster" ? rec?.poster : rec?.avatar;
 	if (!blob) return "";
 	const url = URL.createObjectURL(blob);
 	urlCache.set(key, url);
@@ -90,7 +93,7 @@ function revokeAll() {
 }
 
 /** Cached object URL for a stored blob (safe to call anytime). */
-export function getMediaURL(id: string, kind: "video" | "poster"): Promise<string> {
+export function getMediaURL(id: string, kind: "video" | "poster" | "avatar"): Promise<string> {
 	return mediaURL(id, kind);
 }
 
@@ -121,6 +124,7 @@ export async function getPlayable(): Promise<Playable[]> {
 			...v,
 			srcURL: await mediaURL(v.id, "video"),
 			posterURL: await mediaURL(v.id, "poster"),
+			avatarURL: await mediaURL(v.id, "avatar"),
 		}))
 	);
 }
@@ -128,20 +132,41 @@ export async function getPlayable(): Promise<Playable[]> {
 export async function addVideo(
 	videoFile: Blob,
 	posterFile: Blob | null,
-	meta: Omit<VideoMeta, "id" | "src" | "poster">
+	avatarFile: Blob | null,
+	meta: Omit<VideoMeta, "id" | "src" | "poster" | "avatar">
 ): Promise<string> {
 	const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 	const ext = videoFile.type.includes("webm") ? "webm" : "mp4";
-	await putMedia(id, posterFile ? { video: videoFile, poster: posterFile } : { video: videoFile });
+	const rec: MediaRec = { video: videoFile };
+	if (posterFile) rec.poster = posterFile;
+	if (avatarFile) rec.avatar = avatarFile;
+	await putMedia(id, rec);
 	const feed = await getConfig();
 	feed.push({
 		...meta,
 		id,
 		src: `videos/${id}.${ext}`,
 		poster: posterFile ? `videos/${id}.jpg` : null,
+		avatar: avatarFile ? `avatars/${id}.jpg` : null,
 	});
 	await setConfig(feed);
 	return id;
+}
+
+export async function setAvatar(id: string, file: Blob): Promise<void> {
+	const rec = (await getMedia(id)) ?? { video: new Blob() };
+	rec.avatar = file;
+	await putMedia(id, rec);
+	const urlKey = id + ":avatar";
+	const old = urlCache.get(urlKey);
+	if (old) URL.revokeObjectURL(old);
+	urlCache.delete(urlKey);
+	const feed = await getConfig();
+	const v = feed.find(x => x.id === id);
+	if (v) {
+		v.avatar = `avatars/${id}.jpg`;
+		await setConfig(feed);
+	}
 }
 
 export async function updateMeta(id: string, patch: Partial<VideoMeta>): Promise<void> {
@@ -187,6 +212,7 @@ export async function exportZip(): Promise<Blob> {
 		const m = await getMedia(v.id);
 		if (m?.video) zip.file(v.src, m.video, { compression: "STORE" });
 		if (m?.poster && v.poster) zip.file(v.poster, m.poster, { compression: "STORE" });
+		if (m?.avatar && v.avatar) zip.file(v.avatar, m.avatar, { compression: "STORE" });
 	}
 	return zip.generateAsync({ type: "blob" });
 }
@@ -225,8 +251,22 @@ export async function importZip(blob: Blob, replace: boolean): Promise<number> {
 				type: "image/jpeg",
 			});
 		}
-		await putMedia(m.id, poster ? { video, poster } : { video });
-		const entry: VideoMeta = { ...m, poster: poster ? m.poster : null };
+		let avatar: Blob | undefined;
+		const aFile = m.avatar ? zip.file(m.avatar) : null;
+		if (aFile) {
+			avatar = new Blob([await (await aFile.async("blob")).arrayBuffer()], {
+				type: "image/jpeg",
+			});
+		}
+		const rec: MediaRec = { video };
+		if (poster) rec.poster = poster;
+		if (avatar) rec.avatar = avatar;
+		await putMedia(m.id, rec);
+		const entry: VideoMeta = {
+			...m,
+			poster: poster ? m.poster : null,
+			avatar: avatar ? m.avatar : null,
+		};
 		const i = feed.findIndex(f => f.id === m.id);
 		if (i >= 0) feed[i] = entry;
 		else feed.push(entry);
