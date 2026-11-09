@@ -43,3 +43,7 @@ videos/<id>.jpg    # optional poster (poster field)
 
 Importing a zip lets you choose **replace** (wipe local feed) or **merge**
 (upsert by id).
+
+## Seed
+
+The seed is made of a handful of actual tiktok videos and their metadata.

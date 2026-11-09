@@ -59,6 +59,21 @@ body {
 	overflow: hidden;
 }
 
+/* Desktop: frame the app in a phone aspect ratio */
+@media (min-width: 768px) and (min-aspect-ratio: 1/1) {
+	body {
+		display: grid;
+		place-items: center;
+		background: #0c0c10;
+	}
+	.phone {
+		width: min(430px, calc(100dvh * 9 / 19.5));
+		height: min(100dvh, calc(100vw * 19.5 / 9));
+		border-radius: 28px;
+		box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+	}
+}
+
 button {
 	background: none;
 	border: none;
